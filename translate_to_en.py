@@ -2,8 +2,8 @@ from deep_translator import GoogleTranslator
 import re
 
 # File paths
-input_file = 'transcription_finnish.txt'
-output_file = 'transcription_english_moomin.txt'
+input_file = 'transcription_part2.txt'
+output_file = 'transcription_part2_englished.txt'
 
 # Dictionnaire personnalisé pour adapter le vocabulaire des Moomins
 moomin_vocabulary = {
