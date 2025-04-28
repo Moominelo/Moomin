@@ -20,7 +20,3 @@ def romanize_file(input_file, output_file):
         for line in infile:
             romanized_line = converter.do(line.strip())
             outfile.write(romanized_line + "\n")
-
-    print(f"Romanization complete. Output saved to '{output_file}'.")
-
-

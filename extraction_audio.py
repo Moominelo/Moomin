@@ -36,13 +36,3 @@ def select_video_file():
     )
     return file_path
 
-if __name__ == "__main__":
-    # Demander à l'utilisateur de sélectionner un fichier vidéo
-    video_path = select_video_file()
-    if not video_path:
-        print("❌ Aucun fichier sélectionné. Opération annulée.")
-    else:
-        audio_path = "output_audio.wav"
-        # Extraire l'audio
-        extract_audio(video_path, audio_path)
-
