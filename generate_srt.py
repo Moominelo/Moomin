@@ -27,59 +27,57 @@ def parse_line_with_timestamps(line, time_offset=0):
         return start_time_str, end_time_str, text.strip()
     return None, None, None
 
+def get_files_in_order():
+    """
+    Récupère les fichiers dans l'ordre : part1, part2, part3.
+    Utilise les fichiers romanisés si disponibles.
+    """
+    files = []
+    for i in range(1, 4):  # part1, part2, part3
+        romanised_file = f"transcription_part{i}_romanised.txt"
+        normal_file = f"transcription_part{i}.txt"
+        if os.path.exists(romanised_file):
+            files.append(romanised_file)
+        elif os.path.exists(normal_file):
+            files.append(normal_file)
+        else:
+            print(f"⚠️ Fichier manquant pour part{i}.")
+            files.append(None)
+    return files
+
 def generate_srt():
-    # Input files
-    part1_file = "romanised_transcription_part1.txt"
-    finnish_file = "transcription_english_moomin.txt"
-    part2_file = "romanised_transcription_part2.txt"
+    # Récupérer les fichiers dans l'ordre
+    files = get_files_in_order()
+
+    # Vérifier si tous les fichiers nécessaires sont présents
+    if None in files:
+        print("❌ Impossible de générer le fichier SRT : certains fichiers sont manquants.")
+        return
 
     # Output file
     output_srt = "output.srt"
 
-    # Read input files
-    try:
-        part1_lines = read_file(part1_file)
-        finnish_lines = read_file(finnish_file)
-        part2_lines = read_file(part2_file)
-    except FileNotFoundError as e:
-        print(f"Error: {e}")
-        return
+    # Offsets pour chaque partie
+    offsets = [0, 90, 1389]  # En secondes : part1 = 0s, part2 = +1min30, part3 = +23min09
 
     # Combine all lines with appropriate time offsets
     srt_lines = []
     index = 1
 
-    # Process part 1 (no offset)
-    for line in part1_lines:
-        start_time_str, end_time_str, text = parse_line_with_timestamps(line, time_offset=0)
-        if start_time_str and end_time_str and text:
-            srt_lines.append(f"{index}\n")
-            srt_lines.append(f"{start_time_str} --> {end_time_str}\n")
-            srt_lines.append(f"{text}\n\n")
-            index += 1
-
-    # Process Finnish part (+1min30 offset)
-    for line in finnish_lines:
-        start_time_str, end_time_str, text = parse_line_with_timestamps(line, time_offset=90)  # 1min30 = 90s
-        if start_time_str and end_time_str and text:
-            srt_lines.append(f"{index}\n")
-            srt_lines.append(f"{start_time_str} --> {end_time_str}\n")
-            srt_lines.append(f"{text}\n\n")
-            index += 1
-
-    # Process part 2 (+23min09 offset)
-    for line in part2_lines:
-        start_time_str, end_time_str, text = parse_line_with_timestamps(line, time_offset=1389)  # 23min09 = 1389s
-        if start_time_str and end_time_str and text:
-            srt_lines.append(f"{index}\n")
-            srt_lines.append(f"{start_time_str} --> {end_time_str}\n")
-            srt_lines.append(f"{text}\n\n")
-            index += 1
+    for file_path, time_offset in zip(files, offsets):
+        print(f"📄 Traitement du fichier : {file_path} avec un décalage de {time_offset}s...")
+        lines = read_file(file_path)
+        for line in lines:
+            start_time_str, end_time_str, text = parse_line_with_timestamps(line, time_offset=time_offset)
+            if start_time_str and end_time_str and text:
+                srt_lines.append(f"{index}\n")
+                srt_lines.append(f"{start_time_str} --> {end_time_str}\n")
+                srt_lines.append(f"{text}\n\n")
+                index += 1
 
     # Write to output file
     write_srt(output_srt, srt_lines)
-    print(f"SRT file generated: {output_srt}")
+    print(f"✅ Fichier SRT généré : {output_srt}")
 
 if __name__ == "__main__":
     generate_srt()
-    print("Bravo")

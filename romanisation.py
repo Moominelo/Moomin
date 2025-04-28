@@ -23,8 +23,4 @@ def romanize_file(input_file, output_file):
 
     print(f"Romanization complete. Output saved to '{output_file}'.")
 
-# Process part 1
-romanize_file("transcription_japanese_part1.txt", "romanised_transcription_part1.txt")
 
-# Process part 2
-romanize_file("transcription_japanese_part2.txt", "romanised_transcription_part2.txt")

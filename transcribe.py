@@ -1,5 +1,8 @@
 import whisper
 from pydub import AudioSegment
+import tkinter as tk
+from tkinter import ttk
+from romanisation import romanize_file  # Importer la fonction de romanisation
 
 def split_audio(audio_path, split_times):
     """
@@ -31,7 +34,7 @@ def transcribe_audio(audio_path, language, output_file):
     Transcrit un fichier audio en texte avec des timestamps en utilisant Whisper.
     """
     print(f"📝 Transcription de l'audio : {audio_path} (Langue : {language})...")
-    model = whisper.load_model("base")
+    model = whisper.load_model("small")  # Charger le modèle Whisper
     result = model.transcribe(audio_path, language=language)
 
     # Sauvegarder la transcription dans un fichier
@@ -44,20 +47,133 @@ def transcribe_audio(audio_path, language, output_file):
 
     print(f"✅ Transcription sauvegardée dans : {output_file}")
 
+def get_user_choice_and_timestamps():
+    """
+    Interface graphique pour demander si l'utilisateur souhaite découper l'audio
+    et récupérer les timestamps si nécessaire.
+    """
+    def convert_to_seconds(minutes, seconds):
+        """Convertit les minutes et secondes en secondes totales."""
+        return int(minutes) * 60 + int(seconds)
+
+    def submit():
+        nonlocal split_choice, timestamps
+        split_choice = split_var.get()
+        if split_choice:
+            try:
+                start_minutes = int(start_min_entry.get())
+                start_seconds = int(start_sec_entry.get())
+                end_minutes = int(end_min_entry.get())
+                end_seconds = int(end_sec_entry.get())
+
+                start_time = convert_to_seconds(start_minutes, start_seconds)
+                end_time = convert_to_seconds(end_minutes, end_seconds)
+
+                if start_time >= end_time:
+                    error_label.config(text="Erreur : Le début doit être inférieur à la fin.")
+                else:
+                    timestamps = [start_time, end_time]
+                    root.destroy()
+            except ValueError:
+                error_label.config(text="Erreur : Veuillez entrer des valeurs valides.")
+        else:
+            root.destroy()
+
+    split_choice = False
+    timestamps = []
+
+    root = tk.Tk()
+    root.title("Découper l'audio ?")
+
+    # Question : Découper l'audio ?
+    tk.Label(root, text="Souhaitez-vous découper l'audio ?").pack(pady=10)
+    split_var = tk.BooleanVar(value=False)
+    ttk.Checkbutton(root, text="Oui", variable=split_var).pack(pady=5)
+
+    # Champs pour les timestamps
+    tk.Label(root, text="Début (mm:ss) :").pack(pady=5)
+    start_frame = ttk.Frame(root)
+    start_frame.pack(pady=5)
+    start_min_entry = ttk.Entry(start_frame, width=5)
+    start_min_entry.pack(side="left")
+    tk.Label(start_frame, text=":").pack(side="left")
+    start_sec_entry = ttk.Entry(start_frame, width=5)
+    start_sec_entry.pack(side="left")
+
+    tk.Label(root, text="Fin (mm:ss) :").pack(pady=5)
+    end_frame = ttk.Frame(root)
+    end_frame.pack(pady=5)
+    end_min_entry = ttk.Entry(end_frame, width=5)
+    end_min_entry.pack(side="left")
+    tk.Label(end_frame, text=":").pack(side="left")
+    end_sec_entry = ttk.Entry(end_frame, width=5)
+    end_sec_entry.pack(side="left")
+
+    # Bouton pour soumettre
+    ttk.Button(root, text="Soumettre", command=submit).pack(pady=10)
+
+    # Label pour afficher les erreurs
+    error_label = tk.Label(root, text="", fg="red")
+    error_label.pack(pady=5)
+
+    root.mainloop()
+    return split_choice, timestamps
+
+def get_language_choice(prompt):
+    """
+    Interface graphique pour demander à l'utilisateur de choisir une langue.
+    """
+    def submit():
+        nonlocal selected_language
+        selected_language = language_var.get()
+        root.destroy()
+
+    selected_language = None
+
+    root = tk.Tk()
+    root.title("Choix de la langue")
+
+    tk.Label(root, text=prompt).pack(pady=10)
+    language_var = tk.StringVar(value="en")  # Langue par défaut : anglais
+    ttk.Radiobutton(root, text="Anglais", variable=language_var, value="en").pack(anchor="w")
+    ttk.Radiobutton(root, text="Français", variable=language_var, value="fr").pack(anchor="w")
+    ttk.Radiobutton(root, text="Japonais", variable=language_var, value="ja").pack(anchor="w")
+    ttk.Radiobutton(root, text="Finnois", variable=language_var, value="fi").pack(anchor="w")
+
+    ttk.Button(root, text="Soumettre", command=submit).pack(pady=10)
+
+    root.mainloop()
+    return selected_language
+
 if __name__ == "__main__":
-    audio_path = "episode78_audio.wav"
+    audio_path = "output_audio.wav"
 
-    # Découper l'audio en trois parties : japonais, finnois, japonais
-    split_times = [90, 1389]  # 1min30 (90s) et 23min09 (1389s)
-    parts = split_audio(audio_path, split_times)
+    # Demander à l'utilisateur s'il souhaite découper l'audio
+    split_choice, timestamps = get_user_choice_and_timestamps()
 
-    # Transcrire chaque partie avec la langue appropriée
-    languages = ["ja", "fi", "ja"]  # Japonais, finnois, japonais
-    output_files = [
-        "transcription_japanese_part1.txt",
-        "transcription_finnish.txt",
-        "transcription_japanese_part2.txt"
-    ]
+    if split_choice:
+        print(f"Découpage demandé avec les timestamps : {timestamps}")
+        parts = split_audio(audio_path, timestamps)
 
-    for part, language, output_file in zip(parts, languages, output_files):
-        transcribe_audio(part, language=language, output_file=output_file)
+        # Demander les langues pour chaque partie
+        languages = []
+        for i in range(len(parts)):
+            language = get_language_choice(f"Choisissez la langue pour la partie {i + 1} :")
+            languages.append(language)
+
+        output_files = [
+            f"transcription_part{i + 1}.txt" for i in range(len(parts))
+        ]
+
+        for part, language, output_file in zip(parts, languages, output_files):
+            transcribe_audio(part, language=language, output_file=output_file)
+            if language == "ja":  # Appliquer la romanisation si la langue est japonaise
+                romanized_output_file = output_file.replace(".txt", "_romanised.txt")
+                romanize_file(output_file, romanized_output_file)
+    else:
+        # Demander la langue pour la transcription complète
+        language = get_language_choice("Choisissez la langue pour la transcription complète :")
+        print("Pas de découpage demandé. Transcription complète de l'audio.")
+        transcribe_audio(audio_path, language=language, output_file="transcription_full.txt")
+        if language == "ja":  # Appliquer la romanisation si la langue est japonaise
+            romanize_file("transcription_full.txt", "transcription_full_romanised.txt")

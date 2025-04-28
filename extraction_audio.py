@@ -1,4 +1,6 @@
 import subprocess
+import tkinter as tk
+from tkinter import filedialog
 
 def extract_audio(video_path, audio_path="output_audio.wav"):
     """
@@ -22,10 +24,25 @@ def extract_audio(video_path, audio_path="output_audio.wav"):
         print(f"❌ Erreur lors de l'extraction audio : {e}")
         raise
 
+def select_video_file():
+    """
+    Ouvre une boîte de dialogue pour sélectionner un fichier vidéo.
+    """
+    root = tk.Tk()
+    root.withdraw()  # Masquer la fenêtre principale de Tkinter
+    file_path = filedialog.askopenfilename(
+        title="Sélectionnez un fichier vidéo",
+        filetypes=[("Fichiers MKV", "*.mkv"), ("Tous les fichiers", "*.*")]
+    )
+    return file_path
+
 if __name__ == "__main__":
-    video_path = r"C:\Users\rdgza\OneDrive\Bureau\saison 1\episode78.mkv"
-    audio_path = "episode78_audio.wav"
-    
-    # Extraire l'audio
-    extract_audio(video_path, audio_path)
+    # Demander à l'utilisateur de sélectionner un fichier vidéo
+    video_path = select_video_file()
+    if not video_path:
+        print("❌ Aucun fichier sélectionné. Opération annulée.")
+    else:
+        audio_path = "output_audio.wav"
+        # Extraire l'audio
+        extract_audio(video_path, audio_path)
 
